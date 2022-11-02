@@ -3,6 +3,7 @@ from multicorn import ForeignDataWrapper
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
+import json
 
 class GspreadsheetFdw(ForeignDataWrapper):
     def __init__(self, fdw_options, fdw_columns):
@@ -10,7 +11,7 @@ class GspreadsheetFdw(ForeignDataWrapper):
     The following options are required:
     gskey     -- the key from the gsheet URL
     headrow   -- which row of the spreadsheet to take column names from. Defaults to 1.
-    keyfile   -- the path (on the postgresql-server!) to the .json file containing the appropriate credentials
+    serviceaccount  -- the service account json file content containing the appropriate credentials
                  see https://github.com/burnash/gspread and http://gspread.readthedocs.org/en/latest/oauth2.html ,
                  basically, go to https://console.developers.google.com/
                    make (or choose) a project, choose "Enable or manage APIs", enable "Drive API",
@@ -23,7 +24,7 @@ class GspreadsheetFdw(ForeignDataWrapper):
         self.columns  = fdw_columns
         self.headrow  = int(fdw_options.get('headrow','1'))
         scopes = ['https://spreadsheets.google.com/feeds']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(fdw_options["keyfile"], scopes)
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(fdw_options["serviceaccount"]), scopes)
         gc = gspread.authorize(credentials)
         self.wks = gc.open_by_key(fdw_options["gskey"]).sheet1
 
